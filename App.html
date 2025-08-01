@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HIT Record - Patient EHR</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+    form, .patient-list { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; max-width: 600px; margin: auto; }
+    input, textarea, button, select { width: 100%; margin: 8px 0; padding: 10px; }
+    img { max-width: 100px; margin: 5px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h2>Patient Record</h2>
+  <form onsubmit="saveRecord(event)">
+    <label>Patient ID:</label>
+    <input type="text" id="id" required>
+    
+    <label>Name:</label>
+    <input type="text" id="name" required>
+
+    <label>Gender:</label>
+    <select id="gender" required>
+      <option value="">Select</option>
+      <option>Male</option>
+      <option>Female</option>
+      <option>Other</option>
+    </select>
+
+    <label>Mobile:</label>
+    <input type="tel" id="mobile" required>
+
+    <label>Disease:</label>
+    <input type="text" id="disease" required>
+
+    <label>Reports (upload):</label><br>
+    <input type="file" id="reports" accept="image/*" multiple><br>
+
+    <label>Medicine:</label>
+    <textarea id="medicine" required></textarea>
+
+    <button type="submit">Save Record</button>
+  </form>
+
+  <div class="patient-list" id="recordsList">
+    <h3>Saved Patients</h3>
+    <!-- Records appear here -->
+  </div>
+
+  <script>
+    function saveRecord(e) {
+      e.preventDefault();
+      const id = document.getElementById("id").value;
+      const name = document.getElementById("name").value;
+      const gender = document.getElementById("gender").value;
+      const mobile = document.getElementById("mobile").value;
+      const disease = document.getElementById("disease").value;
+      const medicine = document.getElementById("medicine").value;
+
+      const files = document.getElementById("reports").files;
+      let images = [];
+
+      const readerPromises = [];
+      for (let i = 0; i < files.length; i++) {
+        const reader = new FileReader();
+        const promise = new Promise((resolve) => {
+          reader.onload = () => {
+            images.push(reader.result);
+            resolve();
+          };
+        });
+        reader.readAsDataURL(files[i]);
+        readerPromises.push(promise);
+      }
+
+      Promise.all(readerPromises).then(() => {
+        const record = { id, name, gender, mobile, disease, medicine, images };
+        let records = JSON.parse(localStorage.getItem("patients") || "[]");
+        records.push(record);
+        localStorage.setItem("patients", JSON.stringify(records));
+        alert("Patient Record Saved");
+        showRecords();
+      });
+    }
+
+    function showRecords() {
+      const container = document.getElementById("recordsList");
+      let records = JSON.parse(localStorage.getItem("patients") || "[]");
+      let html = "<h3>Saved Patients</h3>";
+
+      records.forEach((p, index) => {
+        html += `
+          <div style="border-bottom:1px solid #ccc; margin-bottom:10px; padding-bottom:10px;">
+            <strong>ID:</strong> ${p.id}<br>
+            <strong>Name:</strong> ${p.name}<br>
+            <strong>Gender:</strong> ${p.gender}<br>
+            <strong>Mobile:</strong> ${p.mobile}<br>
+            <strong>Disease:</strong> ${p.disease}<br>
+            <strong>Medicine:</strong> ${p.medicine}<br>
+            <strong>Reports:</strong><br>
+            ${p.images.map(img => `<img src="${img}" />`).join("")}
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    showRecords(); // Load records on page load
+  </script>
+</body>
+</html>
